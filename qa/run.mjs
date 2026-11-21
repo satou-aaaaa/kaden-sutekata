@@ -26,10 +26,10 @@ const PINS = "aircon-kaikae:3:4.3,camera:3:0.3,phone:10:3.4.2,game:10:3.2.0,oled
 // パソコン（本体・ノート・ブラウン管と液晶のディスプレイ。有機EL式とタブレットは外）はメーカーへ。メーカーが無い・自作は PC3R協会（有料）。
 const ORDER = ["買い替えで買う店に引き取ってもらう", "前に買った店に引き取ってもらう", "自分でメーカーの指定引取場所へ運ぶ", "パソコンのメーカーに回収を申し込む", "PC3R協会に回収を申し込む", "小型家電の回収に出す"];
 const ANS = {
-  "aircon-kaikae": [0, "yon"], "tv-mae": [1, "yon"], "note-pc": [3, "pc"], drier: [5, "kogata"], "reizoko-kaikae": [0, "yon"], camera: [5, "kogata"],
-  "sentaku-mae": [1, "yon"], "reitoko-kaikae": [0, "yon"], "tv-jibun": [2, "yon"], desktop: [3, "pc"], "lcd-display": [3, "pc"], jisaku: [4, "pc"], game: [5, "kogata"], phone: [5, "kogata"], microwave: [5, "kogata"], "aircon-jibun": [2, "yon"],
-  "kansoki-kaikae": [0, "yon"], "oled-tv": [1, "yon"], "plasma-jibun": [2, "yon"], "reitoko-jibun": [2, "yon"], "maker-nai": [4, "pc"], tablet: [5, "soto"], "tv-denchi": [5, "soto"], "oled-display": [5, "soto"],
-  senpuki: [5, "kogata"], "kaikae-betsu": [0, "yon"], "shurui-chigau": [2, "yon"], "crt-display": [3, "pc"], "mark-nashi": [3, "pc"], "kogata-28": [5, "kogata"],
+  "aircon-kaikae": [0, "mise"], "tv-mae": [1, "mise"], "note-pc": [3, "pc"], drier: [5, "kogata"], "reizoko-kaikae": [0, "mise"], camera: [5, "kogata"],
+  "sentaku-mae": [1, "mise"], "reitoko-kaikae": [0, "mise"], "tv-jibun": [2, "maker"], desktop: [3, "pc"], "lcd-display": [3, "pc"], jisaku: [4, "pc"], game: [5, "kogata"], phone: [5, "kogata"], microwave: [5, "kogata"], "aircon-jibun": [2, "maker"],
+  "kansoki-kaikae": [0, "mise"], "oled-tv": [1, "mise"], "plasma-jibun": [2, "maker"], "reitoko-jibun": [2, "maker"], "maker-nai": [4, "pc"], tablet: [5, "kogata"], "tv-denchi": [5, "kogata"], "oled-display": [5, "kogata"],
+  senpuki: [5, "kogata"], "kaikae-betsu": [0, "mise"], "shurui-chigau": [2, "maker"], "crt-display": [3, "pc"], "mark-nashi": [3, "pc"], "kogata-28": [5, "kogata"],
 };
 // 4品目（施行令第1条）の言葉。問いにこの言葉があれば答えは店かメーカーの出し方、無ければパソコンか小型家電
 const YON = /エアコン|テレビ|冷蔵庫|冷凍庫|洗濯機|衣類乾燥機/;
@@ -57,12 +57,12 @@ function yonOut(q) {
       if (!/　どう出す？$/.test(P.q) || /リサイクル法|第\d+条|PC3R|指定引取場所|小型家電/.test(P.q)) why.push("問いの言い方がちがう（答え・決まりの名前を問いに出さない）");
       // 4品目の問いは、場面の言葉から答えを出し直して比べる。4品目でない問いに店・メーカーの出し方を答えにしない
       const isYon = YON.test(P.q) && !/電池|充電池|パソコン|ディスプレイ|モニター|画面/.test(P.q);
-      if (isYon && t && t[1] === "yon" && yonOut(P.q) !== ai) why.push(`場面から出し直した答え ${yonOut(P.q)} と合わない`);
-      if (t && t[1] !== "yon" && ai <= 2) why.push("4品目でないのに店・メーカーの出し方が答え");
-      if (t && t[1] === "yon" && !isYon) why.push("4品目の答えなのに、問いに4品目の言葉が無い");
+      if (isYon && t && t[0] <= 2 && yonOut(P.q) !== ai) why.push(`場面から出し直した答え ${yonOut(P.q)} と合わない`);
+      if (t && t[0] > 2 && ai <= 2) why.push("4品目でないのに店・メーカーの出し方が答え");
+      if (t && t[0] <= 2 && !isYon) why.push("4品目の答えなのに、問いに4品目の言葉が無い");
       // パソコンの問いの答えに、小型家電の回収（それも出せる道）を選び肢として並べない。小型家電の問いに「前に買った店」を並べない（答えを1つにする）
       if (t && t[1] === "pc" && P.opts.includes(ORDER[5])) why.push("パソコンの問いに小型家電の回収が選び肢にある");
-      if (t && (t[1] === "kogata" || t[1] === "soto") && P.opts.includes(ORDER[1])) why.push("小型家電の問いに前に買った店が選び肢にある");
+      if (t && t[1] === "kogata" && P.opts.includes(ORDER[1])) why.push("小型家電の問いに前に買った店が選び肢にある");
       if (k.lv === 0 && oi.some((i) => fam(i) === fam(ai))) why.push("やさしいのに、同じなかまの出し方がまじる");
       if (k.lv === 2 && !oi.some((i) => fam(i) === fam(ai)) && G.LEVELS.some((_, i) => i !== ai && fam(i) === fam(ai) && !k.ng.includes(i))) why.push("むずかしいのに、同じなかまの出し方が無い");
       if (!P.src.length || P.src.some((x) => !Array.isArray(x) || !/^https:\/\/(laws\.e-gov\.go\.jp|www\.meti\.go\.jp)\//.test(x[1]))) why.push("出典が無い");
@@ -75,7 +75,7 @@ function yonOut(q) {
   const total = Object.values(seen).reduce((a, s) => a + s.size, 0), few = G.KINDS.filter((k) => seen[k.id].size < 12).map((k) => `${k.id}:${seen[k.id].size}`);
   check("問題の数：全部で300通り以上・どの種類も12通り以上（好きなだけ遊んでも同じ問題が続かない。game-dev.md F6）", total >= 300 && few.length === 0, `${total}通り ${few.join(",")}`);
   check("問題：種類は30（やさしい6・ふつう10・むずかしい14）", G.KINDS.length === 30 && [0, 1, 2].map((l) => G.kindsOf(l).length).join() === "6,10,14", [0, 1, 2].map((l) => G.kindsOf(l).length).join());
-  check("答えは6つの出し方と4つの決まりが全部出る・表の種類が全部ある", ORDER.every((o) => G.KINDS.some((k) => k.ans === o)) && ["yon", "pc", "kogata", "soto"].every((g) => G.KINDS.some((k) => k.grp === g)) && JSON.stringify(G.LEVELS) === JSON.stringify(ORDER) && Object.keys(ANS).length === G.KINDS.length && G.KINDS.every((k) => ANS[k.id]));
+  check("答えは6つの出し方と4つの決まりが全部出る・表の種類が全部ある", ORDER.every((o) => G.KINDS.some((k) => k.ans === o)) && ["mise", "maker", "pc", "kogata"].every((g) => G.KINDS.some((k) => k.grp === g)) && JSON.stringify(G.LEVELS) === JSON.stringify(ORDER) && Object.keys(ANS).length === G.KINDS.length && G.KINDS.every((k) => ANS[k.id]));
   check("むずかしいに、衣類乾燥機・有機ELテレビ・ちがう種類の買い替え・電池のテレビ・タブレット・有機ELディスプレイの問題がある", ["kansoki-kaikae", "oled-tv", "shurui-chigau", "tv-denchi", "tablet", "oled-display"].every((id) => G.BY[id] && G.BY[id].lv === 2));
   const longWhy = [], longLook = [], longOpt = [];
   for (const k of G.KINDS) { if ([...k.why].length > 100) longWhy.push(k.id); if ([...k.look].length > 45 || [...k.key].length > 60) longLook.push(k.id); for (let s = 0; s < 200; s++) { const P = G.make(`${k.id}|len${s}`); for (const o of [...P.opts, P.q]) if ([...o].length > 60) longOpt.push(`${k.id}:${o}`); } }
@@ -84,7 +84,7 @@ function yonOut(q) {
   check("出典は e-Gov の家電リサイクル法・小型家電リサイクル法の条文と、経済産業省のパソコンの案内だけ", okSrc);
   check("市区町村ごとの出し方（日・場所・料金の額）・容器のマーク・事故・電気代を問わない", !G.KINDS.some((k) => { const all = [k.why, k.look, k.key, k.ans]; for (let i = 0; i < 100; i++) { const P = G.make(`${k.id}|nz${i}`); all.push(P.q, ...P.opts); } return /\d+円|曜日|収集日|識別表示|プラマーク|発火|火事|電気代|kWh/.test(all.join()); }));
   const sb = Object.keys(G.GROUPS).filter((g) => /\d/.test(G.GROUPS[g].name + G.GROUPS[g].sub));
-  check("2段目は4つ（4品目・パソコン・小型家電・似ているが外）", Object.keys(G.GROUPS).join() === "yon,pc,kogata,soto");
+  check("2段目は4つ（店の引き取り・メーカーの引き取り・パソコン・小型家電）で、重ならない（1段目の答えのなかまで1つに決まる）", Object.keys(G.GROUPS).join() === "mise,maker,pc,kogata" && G.KINDS.every((k) => k.grp === ["mise", "mise", "maker", "pc", "pc", "kogata"][k.a]));
   check("2段目の選び肢に数を書かない（しくみを思い出さないと選べない）", sb.length === 0, sb.join());
   check("場面の言葉で答えを出し直す表が正しく動く（見本の文）", yonOut("古い冷蔵庫を新しい冷蔵庫に買い替える。古いのを買った店はもう無い。車は無い。") === 0 && yonOut("洗濯機を買い替えずに捨てる。買った店は近くにある。運ぶ車は無い。") === 1 && yonOut("古いテレビを捨てる。買い替えない。買った店はもう無い。運べる車はある。") === 2 && yonOut("新しいテレビを買う。古い冷蔵庫を捨てたい。冷蔵庫を買った店は無い。車はある。") === 2 && yonOut("古いテレビを捨てる。買い替えない。買った店はもう無い。車は無い。") === -1);
 }
@@ -372,11 +372,11 @@ try {
     const got = await g.evaluate(() => {
       const base = __nm.load(), mk = (w, w2) => ({ mode: "p", date: __nm.todayKey(), list: ["aircon-kaikae|m1", "tv-mae|m1"], res: [], cur: { i: 0, tag: "aircon-kaikae|m1", wrong: w, hints: 0, step: 2, w2 }, id: "mg1" });
       const a = JSON.parse(JSON.stringify(base)); a.runs.p = mk(["パソコンのメーカーに回収を申し込む"], ["pc"]); a.t = 100;
-      const b = JSON.parse(JSON.stringify(base)); b.runs.p = mk(["小型家電の回収に出す"], ["soto"]); b.t = 200;
+      const b = JSON.parse(JSON.stringify(base)); b.runs.p = mk(["小型家電の回収に出す"], ["kogata"]); b.t = 200;
       localStorage.setItem("kds-v1", JSON.stringify(b)); __nm.setMem(JSON.stringify(a));
       try { return __nm.load().runs.p.cur; } finally { __nm.setMem(null); }
     });
-    check("同じ問題の途中なら、保存に失敗した側のまちがい（1段目・2段目）も消さずに合わせる", got && got.wrong.includes("パソコンのメーカーに回収を申し込む") && got.wrong.includes("小型家電の回収に出す") && got.w2.includes("pc") && got.w2.includes("soto"), JSON.stringify(got));
+    check("同じ問題の途中なら、保存に失敗した側のまちがい（1段目・2段目）も消さずに合わせる", got && got.wrong.includes("パソコンのメーカーに回収を申し込む") && got.wrong.includes("小型家電の回収に出す") && got.w2.includes("pc") && got.w2.includes("kogata"), JSON.stringify(got));
     const n = await g.evaluate(() => { __nm.save((s) => { s.runs.p = { mode: "p", date: __nm.todayKey(), list: ["aircon-kaikae|s1", "tv-mae|s1"], res: [], cur: null, id: "sc1" }; }); __nm.play("p"); __nm.sureCount(true); __nm.sureCount(true); return __nm.load().runs.p.ds; });
     check("「自信あり」の数は1問につき1回だけ（2つのタブで同じ問題を当てても2回足さない）", n && n.n === 1 && n.ok === 1, JSON.stringify(n));
     await ctx.close();
@@ -424,7 +424,7 @@ try {
     const wg = await q.evaluate(() => Object.keys(__nm.G.GROUPS).find((x) => x !== __nm.cur().P.grp));
     await q.click(`.why button[data-g="${wg}"]`);
     check("2段目でまちがえると ✕ ちがう（破線）・もう一度選べる", await q.locator(".why button.ng").count() === 1 && (await q.textContent("#msg")).includes("✕"));
-    check("2段目でまちがえると「ちがう決まりです」と出る", wg === "pc" && (await q.textContent("#msg")).includes("ちがう決まりです"));
+    check("2段目でまちがえると「ちがう決まりです」と出る", wg === "maker" && (await q.textContent("#msg")).includes("ちがう決まりです"));
     await q.click("#hint");
     const ng1 = await q.locator(".why button:disabled").count();
     check("2段目のヒントは、まちがえた目安とは別のちがう目安を消す（★を使って何も消えないことが無い。2026-11-11 CodeRabbit）", ng1 === 2 && await q.locator(".why button:not(:disabled)").count() === 2, ng1);
@@ -547,7 +547,7 @@ try {
   check("記録の数の所に数でも文字でもない物（{toString:null}）が入っても、ホームが出る（先のゲーム #1 の CodeRabbit）", await q.locator("#go-dex").count() === 1);
   await q.close(); }
 { const bad = G.KINDS.filter((k) => { for (let i = 0; i < 200; i++) { const P = G.make(`${k.id}|g${i}`); if (!G.GROUPS[P.grp]) return true; } return false; }).map((k) => k.id), used = new Set(G.KINDS.map((k) => k.grp).filter(Boolean));
-  check("2段目「どの決まり？」：どの問題も4つのどれかで、4つとも使う", bad.length === 0 && Object.keys(G.GROUPS).join() === "yon,pc,kogata,soto" && used.size === 4, bad.join(",")); }
+  check("2段目「どの決まり？」：どの問題も4つのどれかで、4つとも使う", bad.length === 0 && Object.keys(G.GROUPS).join() === "mise,maker,pc,kogata" && used.size === 4, bad.join(",")); }
 // 引き継ぎコード（shared-workflows template/qa/transfer-check.mjs）
 try {
   const sample = { "kds-v1": JSON.stringify({ v: 1, tut: true, days: { "2026-11-13": { m: [0, 1, 0, 0, 2], k: ["aircon-kaikae", "tv-mae", "note-pc", "sentaku-mae", "drier"] } }, hdays: {}, adays: {}, dex: { "aircon-kaikae": 1, desktop: 1, "kansoki-kaikae": 1, "note-pc": 1, "oled-tv": 1 }, runs: {}, kofi: {}, ach: {}, ebest: 7, t: 1 }), "kds-fs": "3", "kds-depth": JSON.stringify({ v: 1, rv: { "aircon-kaikae|x1": { s: 1, due: "2026-11-20", t: 5 } } }) }; // 復習の記録も引き継ぐかを見る（CodeRabbit shindo-yomi#1）
